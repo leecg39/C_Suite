@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CEO 전략적 대시보드</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --primary: #0da2e7;
+            --bg-beige: #F9F7F2;
+            --card-white: #FFFFFF;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-beige);
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-size: 32px;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }.character-icon {
+            font-size: 40px !important;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0da2e7",
+                        "beige-light": "#F9F7F2",
+                        "beige-warm": "#F5F5DC"
+                    },
+                    borderRadius: {
+                        "2xl": "1.25rem",
+                        "3xl": "1.5rem"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen text-[#1a1a1a]">
+<header class="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-[#e5e1d5]">
+<div class="flex items-center justify-between p-4 h-16 max-w-md mx-auto">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#333]">menu</span>
+<h2 class="text-[#333] text-xl font-bold tracking-tight">CEO 대시보드</h2>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">notifications</span>
+<div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-primary">
+<img alt="CEO Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLeYwMxJhYdO4nZ3WgAvgCrhahOnzbgDgcliOarLHk5SK65Yg35IC5011v3heMS5W4IJJtRmaT-geLWOD8nq086NsLJ81vNCDDbKMNgHRDrpIj51kyMAlZ_02eq1hyJBG-gAktPjZLhFMvGUb1cfp86WVHs_v4ENTMnXjOZ2OkkKTIIUBVEVDZC9UiV4m9pNL0JceRr7bicCeXrOZzrsxUVfcpsIGelxNoykLSn1W3Tf_YIWuFsN78ZY1nNv-1djc8zUh4RlunApU"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-md mx-auto pb-32">
+<section class="px-6 pt-8 pb-4">
+<h1 class="text-[#111618] text-[32px] font-bold leading-tight tracking-tight">
+            반갑습니다, <br/>홍 대표님
+        </h1>
+<p class="text-[#7a7a6a] text-lg font-medium mt-2">2023년 10월 23일 월요일</p>
+</section>
+<section class="px-6 py-4">
+<div class="flex flex-col gap-3">
+<label class="text-[#333] text-lg font-bold ml-1">AI 전략 비서에게 물어보기</label>
+<div class="relative flex items-center shadow-lg shadow-black/5">
+<input class="w-full h-16 pl-6 pr-14 text-[18px] border-none rounded-2xl focus:ring-2 focus:ring-primary bg-white text-[#111618] placeholder:text-[#a0a090]" placeholder="궁금하신 경영 분석 내용을 입력하세요" type="text"/>
+<div class="absolute right-4 text-primary">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+</div>
+</div>
+</section>
+<section class="px-6 py-6 overflow-x-auto hide-scrollbar">
+<div class="flex gap-5">
+<div class="flex flex-col items-center gap-3 min-w-[85px]">
+<div class="w-20 h-20 rounded-3xl bg-amber-50 flex items-center justify-center border-2 border-amber-100 shadow-sm">
+<span class="material-symbols-outlined character-icon text-amber-600">psychology_alt</span>
+</div>
+<span class="text-base font-bold text-[#333]">CFO 부엉이</span>
+</div>
+<div class="flex flex-col items-center gap-3 min-w-[85px]">
+<div class="w-20 h-20 rounded-3xl bg-blue-50 flex items-center justify-center border-2 border-blue-100 shadow-sm">
+<span class="material-symbols-outlined character-icon text-blue-600">robot_2</span>
+</div>
+<span class="text-base font-medium text-[#7a7a6a]">CTO 로봇</span>
+</div>
+<div class="flex flex-col items-center gap-3 min-w-[85px]">
+<div class="w-20 h-20 rounded-3xl bg-purple-50 flex items-center justify-center border-2 border-purple-100 shadow-sm">
+<span class="material-symbols-outlined character-icon text-purple-600">auto_awesome</span>
+</div>
+<span class="text-base font-medium text-[#7a7a6a]">CMO 여우</span>
+</div>
+<div class="flex flex-col items-center gap-3 min-w-[85px]">
+<div class="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center border-2 border-green-100 shadow-sm">
+<span class="material-symbols-outlined character-icon text-green-600">sentiment_satisfied</span>
+</div>
+<span class="text-base font-medium text-[#7a7a6a]">인사 곰</span>
+</div>
+</div>
+</section>
+<section class="px-6 py-6">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-[#111618] text-2xl font-bold tracking-tight">오늘의 핵심 인사이트</h2>
+<span class="text-primary font-bold text-base">전체보기</span>
+</div>
+<div class="flex flex-col gap-6">
+<div class="bg-white p-7 rounded-[28px] border border-[#e5e1d5] shadow-sm">
+<div class="flex items-center gap-3 mb-5">
+<div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div>
+<p class="text-[#7a7a6a] font-bold text-sm">지혜로운 CFO의 보고</p>
+<h4 class="text-[#111618] font-bold text-lg">재무 실적 분석</h4>
+</div>
+</div>
+<div class="flex justify-between items-end mb-4">
+<h3 class="text-[36px] font-bold text-[#111618]">58억 원</h3>
+<span class="text-green-600 font-bold text-xl mb-1">+12.5% ↑</span>
+</div>
+<p class="text-[#4a4a40] text-lg leading-relaxed">
+                    분기 목표의 <span class="text-primary font-bold">85%</span>를 달성했습니다. 현재 속도라면 다음 달 목표를 조기 달성할 수 있을 것으로 보입니다.
+                </p>
+<div class="mt-6 w-full bg-[#f0ede4] h-4 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[85%] rounded-full"></div>
+</div>
+</div>
+<div class="bg-white p-7 rounded-[28px] border border-[#e5e1d5] shadow-sm">
+<div class="flex items-center gap-3 mb-5">
+<div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined">rocket_launch</span>
+</div>
+<div>
+<p class="text-[#7a7a6a] font-bold text-sm">똑똑한 CTO의 보고</p>
+<h4 class="text-[#111618] font-bold text-lg">기술 개발 로드맵</h4>
+</div>
+</div>
+<div class="mb-4">
+<span class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold border border-green-200">순조롭게 진행 중</span>
+</div>
+<p class="text-[#4a4a40] text-lg leading-relaxed">
+                    AI 핵심 엔진 고도화 작업이 계획보다 <span class="text-blue-600 font-bold">2주 앞당겨</span> 완료되었습니다. 신제품 출시 준비가 원활합니다.
+                </p>
+</div>
+<div class="bg-white p-7 rounded-[28px] border border-[#e5e1d5] shadow-sm">
+<div class="flex items-center gap-3 mb-5">
+<div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+<span class="material-symbols-outlined">public</span>
+</div>
+<div>
+<p class="text-[#7a7a6a] font-bold text-sm">창의적인 CMO의 보고</p>
+<h4 class="text-[#111618] font-bold text-lg">시장 반응 리포트</h4>
+</div>
+</div>
+<div class="flex justify-between items-end mb-4">
+<h3 class="text-2xl font-bold text-[#111618]">브랜드 선호도 상승</h3>
+<span class="material-symbols-outlined text-primary mb-1">sentiment_very_satisfied</span>
+</div>
+<p class="text-[#4a4a40] text-lg leading-relaxed">
+                    새로운 캠페인 이후 긍정적인 고객 반응이 <span class="text-purple-600 font-bold">40% 증가</span>했습니다. 특히 5060 세대의 유입이 눈에 띕니다.
+                </p>
+</div>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e1d5] px-6 pb-10 pt-4 shadow-[0_-8px_20px_rgba(0,0,0,0.04)] z-50">
+<div class="max-w-md mx-auto flex justify-around items-center">
+<button class="flex flex-col items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[15px] font-bold">홈</span>
+</button>
+<button class="flex flex-col items-center gap-1.5 text-[#a0a090]">
+<span class="material-symbols-outlined">description</span>
+<span class="text-[15px] font-bold">상세보고서</span>
+</button>
+<button class="flex flex-col items-center gap-1.5 text-[#a0a090]">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="text-[15px] font-bold">비서와 대화</span>
+</button>
+<button class="flex flex-col items-center gap-1.5 text-[#a0a090]">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[15px] font-bold">설정</span>
+</button>
+</div>
+</nav>
+
+</body></html>

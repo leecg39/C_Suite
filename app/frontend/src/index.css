@@ -1,0 +1,363 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 11.4%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11.4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11.4%;
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 11.4%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 43.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 11.4%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 210 100% 45%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 96.1%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 96.1%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 96.1%;
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 17.3%;
+    --secondary-foreground: 0 0% 96.1%;
+    --muted: 0 0% 17.3%;
+    --muted-foreground: 0 0% 53.9%;
+    --accent: 0 0% 17.3%;
+    --accent-foreground: 0 0% 96.1%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 96.1%;
+    --border: 0 0% 17.3%;
+    --input: 0 0% 17.3%;
+    --ring: 210 100% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border transition-colors duration-300;
+  }
+  
+  body {
+    @apply bg-white dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] antialiased;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+    font-size: 17px;
+    line-height: 1.47059;
+    letter-spacing: -0.022em;
+    font-weight: 400;
+  }
+
+  /* Apple-style heading hierarchy */
+  h1 {
+    @apply text-5xl md:text-6xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight leading-[1.0834933333];
+    letter-spacing: -0.015em;
+  }
+  
+  h2 {
+    @apply text-4xl md:text-5xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight leading-[1.0834933333];
+    letter-spacing: -0.015em;
+  }
+  
+  h3 {
+    @apply text-3xl md:text-4xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight;
+    letter-spacing: -0.012em;
+  }
+  
+  h4 {
+    @apply text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7];
+    letter-spacing: -0.012em;
+  }
+
+  /* Apple-style focus states */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-[#0071E3] ring-offset-2 dark:ring-offset-black rounded-xl;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Apple-style primary button */
+  .btn-apple-primary {
+    @apply bg-[#0071E3] text-white px-6 py-3 text-base font-normal rounded-full min-h-[44px] cursor-pointer transition-all duration-300 border-none;
+    letter-spacing: -0.022em;
+  }
+  .btn-apple-primary:hover {
+    @apply bg-[#0077ED] scale-[1.02] shadow-lg;
+  }
+  .btn-apple-primary:active {
+    @apply scale-100 bg-[#006EDB];
+  }
+
+  /* Apple-style secondary button */
+  .btn-apple-secondary {
+    @apply bg-transparent text-[#0071E3] border-2 border-[#0071E3] px-6 py-3 text-base font-normal rounded-full min-h-[44px] cursor-pointer transition-all duration-300;
+    letter-spacing: -0.022em;
+  }
+  .btn-apple-secondary:hover {
+    @apply bg-[#0071E3] bg-opacity-5 scale-[1.02];
+  }
+
+  /* Apple-style link */
+  .link-apple {
+    @apply text-[#0071E3] no-underline transition-opacity duration-200;
+  }
+  .link-apple:hover {
+    @apply opacity-80 underline;
+  }
+
+  /* Apple-style input */
+  .input-apple {
+    @apply w-full px-4 py-3 text-base border border-[#D2D2D7] dark:border-[#3A3A3C] rounded-xl bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-[#F5F5F7] min-h-[44px] transition-all duration-300;
+    letter-spacing: -0.022em;
+  }
+  .input-apple:focus {
+    @apply outline-none border-[#0071E3] ring-1 ring-[#0071E3];
+  }
+  .input-apple::placeholder {
+    @apply text-[#86868B];
+  }
+
+  /* Apple-style card */
+  .card-apple {
+    @apply bg-white dark:bg-[#1C1C1E] rounded-2xl p-8 transition-all duration-300;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  .dark .card-apple {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .card-apple:hover {
+    @apply scale-[1.02];
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px) rotateX(2deg);
+  }
+  .dark .card-apple:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Apple-style section */
+  .section-apple {
+    @apply py-16 md:py-24 px-6;
+  }
+
+  /* Apple-style container */
+  .container-apple {
+    @apply max-w-[980px] mx-auto;
+  }
+
+  /* Agent avatar - Apple style with 3D effect */
+  .agent-avatar-apple {
+    @apply w-20 h-20 rounded-full flex items-center justify-center text-3xl font-semibold text-white transition-all duration-300;
+    transform-style: preserve-3d;
+  }
+  .agent-avatar-apple:hover {
+    @apply scale-110;
+    transform: translateZ(10px) rotateY(5deg);
+  }
+
+  /* Apple-style badge */
+  .badge-apple {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full;
+    letter-spacing: -0.01em;
+  }
+
+  /* Apple-style divider */
+  .divider-apple {
+    @apply h-px bg-[#D2D2D7] dark:bg-[#3A3A3C] my-12;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-[#D2D2D7] dark:border-[#3A3A3C] border-t-[#0071E3];
+  }
+}
+
+@layer utilities {
+  /* Apple-style text colors */
+  .text-apple-primary {
+    @apply text-[#1D1D1F] dark:text-[#F5F5F7];
+  }
+  .text-apple-secondary {
+    @apply text-[#6E6E73] dark:text-[#98989D];
+  }
+  .text-apple-blue {
+    color: #0071E3;
+  }
+
+  /* Apple-style backgrounds */
+  .bg-apple-white {
+    @apply bg-white dark:bg-black;
+  }
+  .bg-apple-light {
+    @apply bg-[#F5F5F7] dark:bg-[#1C1C1E];
+  }
+  .bg-apple-blue {
+    background-color: #0071E3;
+  }
+
+  /* Custom scrollbar - Apple style */
+  .scrollbar-apple::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-apple::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .scrollbar-apple::-webkit-scrollbar-thumb {
+    @apply bg-[#D2D2D7] dark:bg-[#3A3A3C] rounded-full;
+  }
+  .scrollbar-apple::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#86868B] dark:bg-[#545456];
+  }
+
+  /* Firefox scrollbar */
+  .scrollbar-apple {
+    scrollbar-width: thin;
+    scrollbar-color: #D2D2D7 transparent;
+  }
+  .dark .scrollbar-apple {
+    scrollbar-color: #3A3A3C transparent;
+  }
+
+  /* Enhanced animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+
+  .animate-typing {
+    animation: typing 2s steps(40, end);
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 0.1s;
+  }
+  .animate-delay-200 {
+    animation-delay: 0.2s;
+  }
+  .animate-delay-300 {
+    animation-delay: 0.3s;
+  }
+  .animate-delay-400 {
+    animation-delay: 0.4s;
+  }
+  .animate-delay-500 {
+    animation-delay: 0.5s;
+  }
+  .animate-delay-600 {
+    animation-delay: 0.6s;
+  }
+
+  /* 3D transform utilities */
+  .transform-3d {
+    transform-style: preserve-3d;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+}
