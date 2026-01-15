@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,69 +19,93 @@ import {
   TrendingDown,
   Filter,
   ChevronDown,
-  Calendar
+  Calendar,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AgentAvatar } from '@/components/AgentAvatar';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { useAgents, useConversations, useCreateConversation, useCreateMessage } from '@/services/queries';
+import type { Agent } from '@/services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Filter states
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [departmentFilter, setDepartmentFilter] = useState<'all' | 'sales' | 'marketing' | 'dev' | 'operations' | 'hr'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const agents = [
-    {
-      id: 'cfo' as const,
-      name: 'CFO',
-      role: '재무 전략',
-      icon: TrendingUp,
-      color: 'from-emerald-400 to-emerald-600'
-    },
-    {
-      id: 'cto' as const,
-      name: 'CTO',
-      role: '기술 혁신',
-      icon: Code,
-      color: 'from-indigo-400 to-indigo-600'
-    },
-    {
-      id: 'cmo' as const,
-      name: 'CMO',
-      role: '마케팅 전략',
-      icon: Megaphone,
-      color: 'from-orange-400 to-orange-600'
-    },
-    {
-      id: 'coo' as const,
-      name: 'COO',
-      role: '운영 효율화',
-      icon: Settings,
-      color: 'from-purple-400 to-purple-600'
-    },
-    {
-      id: 'chro' as const,
-      name: 'CHRO',
-      role: '인사 전략',
-      icon: Users,
-      color: 'from-pink-400 to-pink-600'
-    }
-  ];
+  // API queries - 실제 데이터 로드
+  const { data: agents = [], isLoading: agentsLoading, error: agentsError } = useAgents();
+  const { data: conversations = [], isLoading: conversationsLoading } = useConversations(currentUserId || '');
+  const createConversation = useCreateConversation();
+  const createMessage = useCreateMessage();
 
-  const recentConversations = [
-    { id: 1, title: '신제품 출시 전략 검토', time: '2시간 전', agents: ['CFO', 'CMO', 'CTO'], hasReport: true },
-    { id: 2, title: 'Q4 재무 실적 분석', time: '어제', agents: ['CFO'], hasReport: false },
-    { id: 3, title: '조직 문화 개선 방안', time: '3일 전', agents: ['CHRO', 'COO'], hasReport: false },
-    { id: 4, title: '디지털 전환 로드맵', time: '1주일 전', agents: ['CTO', 'COO'], hasReport: false }
-  ];
+  // Mock user ID for development (실제로는 인증 후 가져와야 함)
+  useEffect(() => {
+    const mockUserId = localStorage.getItem('user_id') || '00000000-0000-0000-0000-000000000001';
+    setCurrentUserId(mockUserId);
+  }, []);
+
+  // Agent 매핑
+  const agentConfigMap: Record<string, { role: string; icon: any; color: string }> = {
+    'CFO': { role: '재무 전략', icon: TrendingUp, color: 'from-emerald-400 to-emerald-600' },
+    'CTO': { role: '기술 혁신', icon: Code, color: 'from-indigo-400 to-indigo-600' },
+    'CMO': { role: '마케팅 전략', icon: Megaphone, color: 'from-orange-400 to-orange-600' },
+    'COO': { role: '운영 효율화', icon: Settings, color: 'from-purple-400 to-purple-600' },
+    'CHRO': { role: '인사 전략', icon: Users, color: 'from-pink-400 to-pink-600' },
+  };
+
+  // 에이전트 로딩 상태 처리
+  if (agentsLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-black">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-[#0071E3] mx-auto" />
+          <p className="text-[#6E6E73] dark:text-[#98989D]">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에이전트 에러 상태 처리
+  if (agentsError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-black">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <p className="text-[#1D1D1F] dark:text-[#F5F5F7]">데이터를 불러오는데 실패했습니다.</p>
+          <p className="text-sm text-[#6E6E73] dark:text-[#98989D]">Supabase 연결을 확인해주세요.</p>
+          <Button onClick={() => window.location.reload()} className="btn-apple-primary">
+            다시 시도
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 대화 시간 형식화
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    if (diffDays < 7) return `${diffDays}일 전`;
+    return date.toLocaleDateString('ko-KR');
+  };
 
   // 전체 데이터셋
   const allRevenueData = {
@@ -209,16 +233,48 @@ export default function Dashboard() {
     { value: 'hr' as const, label: '인사' },
   ];
 
-  const handleSend = () => {
-    if (message.trim()) {
+  const handleSend = async () => {
+    if (message.trim() && currentUserId) {
       setIsTyping(true);
-      console.log('Sending message:', message);
+      const userMessage = message;
       setMessage('');
-      
-      // Simulate typing animation
-      setTimeout(() => {
+
+      try {
+        // 1. 새 대화 생성 (실제로는 기존 대화에 메시지 추가 로직이 필요할 수 있음)
+        const conversation = await createConversation.mutateAsync({
+          userId: currentUserId,
+          title: userMessage.slice(0, 50) + (userMessage.length > 50 ? '...' : ''),
+        });
+
+        // 2. 사용자 메시지 저장
+        await createMessage.mutateAsync({
+          conversation_id: conversation.id,
+          agent_id: null,
+          role: 'user',
+          content: userMessage,
+          metadata: null,
+          confidence_score: null,
+        });
+
+        // 3. AI 응답 시뮬레이션 (실제로는 AI API 호출)
+        setTimeout(async () => {
+          // AI 응답 메시지 저장
+          await createMessage.mutateAsync({
+            conversation_id: conversation.id,
+            agent_id: agents[0]?.id || null,
+            role: 'assistant',
+            content: '이것은 AI의 샘플 응답입니다. 실제 API 연결 후 동적으로 생성될 예정입니다.',
+            metadata: { model: 'gpt-4', tokens: 150 },
+            confidence_score: 0.95,
+          });
+
+          setIsTyping(false);
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to send message:', error);
         setIsTyping(false);
-      }, 2000);
+        setMessage(userMessage); // 실패 시 메시지 복원
+      }
     }
   };
 
@@ -251,42 +307,39 @@ export default function Dashboard() {
             <h3 className="text-xs font-semibold text-[#6E6E73] dark:text-[#98989D] uppercase tracking-wider px-3 mb-3">
               최근 대화
             </h3>
-            {recentConversations.map((conv) => (
-              <button
-                key={conv.id}
-                className="w-full text-left p-3 rounded-xl hover:bg-white dark:hover:bg-[#2C2C2E] transition-all duration-200 group"
-              >
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="h-5 w-5 text-[#6E6E73] dark:text-[#98989D] mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate group-hover:text-[#0071E3] transition-colors">
-                      {conv.title}
-                    </p>
-                    <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">{conv.time}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex gap-1">
-                        {conv.agents.map((agent, i) => (
-                          <span key={i} className="badge-apple bg-white dark:bg-[#2C2C2E] text-[#6E6E73] dark:text-[#98989D] text-xs">
-                            {agent}
-                          </span>
-                        ))}
-                      </div>
-                      {conv.hasReport && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate('/reports/1');
-                          }}
-                          className="ml-auto p-1 hover:bg-[#0071E3] hover:bg-opacity-10 rounded transition-colors"
-                        >
-                          <FileText className="h-4 w-4 text-[#0071E3]" />
-                        </button>
+            {conversationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="h-10 w-10 text-[#6E6E73] dark:text-[#98989D] mx-auto mb-2 opacity-50" />
+                <p className="text-sm text-[#6E6E73] dark:text-[#98989D]">아직 대화가 없습니다</p>
+                <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">새 대화를 시작해보세요</p>
+              </div>
+            ) : (
+              conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  className="w-full text-left p-3 rounded-xl hover:bg-white dark:hover:bg-[#2C2C2E] transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-3">
+                    <MessageSquare className="h-5 w-5 text-[#6E6E73] dark:text-[#98989D] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate group-hover:text-[#0071E3] transition-colors">
+                        {conv.title}
+                      </p>
+                      <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">{formatTime(conv.updated_at)}</p>
+                      {conv.status === 'active' && (
+                        <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full">
+                          진행중
+                        </span>
                       )}
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
         </div>
       </aside>
@@ -536,21 +589,36 @@ export default function Dashboard() {
 
               {/* Agent Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-8">
-                {agents.map((agent, index) => (
-                  <button
-                    key={agent.id}
-                    className="card-apple p-6 text-center space-y-3 hover:scale-105 opacity-0 animate-scale-in"
-                    style={{ animationDelay: `${(index + 1) * 100}ms` }}
-                  >
-                    <div className="mx-auto transform transition-transform duration-300 hover:scale-110">
-                      <AgentAvatar agentId={agent.id} size="md" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{agent.name}</p>
-                      <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">{agent.role}</p>
-                    </div>
-                  </button>
-                ))}
+                {agents.map((agent, index) => {
+                  const config = agentConfigMap[agent.agent_type] || {
+                    role: 'AI 에이전트',
+                    icon: Activity,
+                    color: 'from-gray-400 to-gray-600'
+                  };
+                  const IconComponent = config.icon;
+
+                  return (
+                    <button
+                      key={agent.id}
+                      className="card-apple p-6 text-center space-y-3 hover:scale-105 opacity-0 animate-scale-in"
+                      style={{ animationDelay: `${(index + 1) * 100}ms` }}
+                      onClick={() => {
+                        // 에이전트 선택 시 해당 에이전트와 대화 시작
+                        setMessage(`${config.role} ${agent.agent_type}와 대화를 시작합니다.`);
+                      }}
+                    >
+                      <div className="mx-auto transform transition-transform duration-300 hover:scale-110">
+                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+                          <IconComponent className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{agent.agent_type}</p>
+                        <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">{config.role}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Quick Questions */}
