@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,7 +16,10 @@ import {
   DollarSign,
   Target,
   Activity,
-  TrendingDown
+  TrendingDown,
+  Filter,
+  ChevronDown,
+  Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -29,6 +32,11 @@ export default function Dashboard() {
   const [message, setMessage] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+
+  // Filter states
+  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const [departmentFilter, setDepartmentFilter] = useState<'all' | 'sales' | 'marketing' | 'dev' | 'operations' | 'hr'>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const agents = [
     {
@@ -75,60 +83,106 @@ export default function Dashboard() {
     { id: 4, title: '디지털 전환 로드맵', time: '1주일 전', agents: ['CTO', 'COO'], hasReport: false }
   ];
 
-  // 주요 KPI 메트릭
-  const kpiData = [
-    {
-      title: '월 매출',
-      value: '24.5억',
-      change: '+12.5%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-emerald-500'
-    },
-    {
-      title: '목표 달성률',
-      value: '87%',
-      change: '+5.2%',
-      trend: 'up',
-      icon: Target,
-      color: 'text-blue-500'
-    },
-    {
-      title: '활성 프로젝트',
-      value: '23',
-      change: '+3',
-      trend: 'up',
-      icon: Activity,
-      color: 'text-purple-500'
-    },
-    {
-      title: '운영 비용',
-      value: '8.2억',
-      change: '-2.1%',
-      trend: 'down',
-      icon: TrendingDown,
-      color: 'text-orange-500'
-    }
-  ];
+  // 전체 데이터셋
+  const allRevenueData = {
+    week: [
+      { month: '월', revenue: 5.2, target: 5.5 },
+      { month: '화', revenue: 4.8, target: 5.5 },
+      { month: '수', revenue: 6.1, target: 5.5 },
+      { month: '목', revenue: 5.7, target: 5.5 },
+      { month: '금', revenue: 6.3, target: 6.0 },
+      { month: '토', revenue: 3.8, target: 4.0 },
+      { month: '일', revenue: 3.2, target: 3.5 },
+    ],
+    month: [
+      { month: '1월', revenue: 18.2, target: 20 },
+      { month: '2월', revenue: 19.5, target: 20 },
+      { month: '3월', revenue: 21.8, target: 22 },
+      { month: '4월', revenue: 20.3, target: 22 },
+      { month: '5월', revenue: 23.1, target: 24 },
+      { month: '6월', revenue: 24.5, target: 25 },
+    ],
+    quarter: [
+      { month: 'Q1', revenue: 59.5, target: 62 },
+      { month: 'Q2', revenue: 67.9, target: 71 },
+      { month: 'Q3', revenue: 72.3, target: 75 },
+      { month: 'Q4', revenue: 78.1, target: 80 },
+    ],
+    year: [
+      { month: '2020', revenue: 210, target: 220 },
+      { month: '2021', revenue: 245, target: 250 },
+      { month: '2022', revenue: 278, target: 280 },
+      { month: '2023', revenue: 298, target: 300 },
+      { month: '2024', revenue: 325, target: 330 },
+    ]
+  };
 
-  // 월별 매출 데이터
-  const revenueData = [
-    { month: '1월', revenue: 18.2, target: 20 },
-    { month: '2월', revenue: 19.5, target: 20 },
-    { month: '3월', revenue: 21.8, target: 22 },
-    { month: '4월', revenue: 20.3, target: 22 },
-    { month: '5월', revenue: 23.1, target: 24 },
-    { month: '6월', revenue: 24.5, target: 25 },
-  ];
+  const allDepartmentData = {
+    all: [
+      { name: '영업', performance: 92, target: 100, id: 'sales' },
+      { name: '마케팅', performance: 85, target: 100, id: 'marketing' },
+      { name: '개발', performance: 88, target: 100, id: 'dev' },
+      { name: '운영', performance: 78, target: 100, id: 'operations' },
+      { name: '인사', performance: 82, target: 100, id: 'hr' },
+    ],
+    sales: [
+      { name: '영업팀 A', performance: 95, target: 100 },
+      { name: '영업팀 B', performance: 88, target: 100 },
+      { name: '영업팀 C', performance: 92, target: 100 },
+    ],
+    marketing: [
+      { name: '디지털 마케팅', performance: 90, target: 100 },
+      { name: '브랜드 마케팅', performance: 82, target: 100 },
+      { name: '이벤트 마케팅', performance: 78, target: 100 },
+    ],
+    dev: [
+      { name: '프론트엔드', performance: 92, target: 100 },
+      { name: '백엔드', performance: 88, target: 100 },
+      { name: 'DevOps', performance: 85, target: 100 },
+    ],
+    operations: [
+      { name: '고객 지원', performance: 80, target: 100 },
+      { name: '물류', performance: 75, target: 100 },
+      { name: '품질 관리', performance: 82, target: 100 },
+    ],
+    hr: [
+      { name: '채용', performance: 85, target: 100 },
+      { name: '교육', performance: 80, target: 100 },
+      { name: '복지', performance: 88, target: 100 },
+    ]
+  };
 
-  // 부서별 성과 데이터
-  const departmentData = [
-    { name: '영업', performance: 92, target: 100 },
-    { name: '마케팅', performance: 85, target: 100 },
-    { name: '개발', performance: 88, target: 100 },
-    { name: '운영', performance: 78, target: 100 },
-    { name: '인사', performance: 82, target: 100 },
-  ];
+  const allKpiData = {
+    week: [
+      { title: '주간 매출', value: '35.1억', change: '+8.2%', trend: 'up', icon: DollarSign, color: 'text-emerald-500' },
+      { title: '목표 달성률', value: '95%', change: '+3.1%', trend: 'up', icon: Target, color: 'text-blue-500' },
+      { title: '활성 프로젝트', value: '23', change: '+3', trend: 'up', icon: Activity, color: 'text-purple-500' },
+      { title: '운영 비용', value: '2.1억', change: '-1.5%', trend: 'down', icon: TrendingDown, color: 'text-orange-500' }
+    ],
+    month: [
+      { title: '월 매출', value: '24.5억', change: '+12.5%', trend: 'up', icon: DollarSign, color: 'text-emerald-500' },
+      { title: '목표 달성률', value: '87%', change: '+5.2%', trend: 'up', icon: Target, color: 'text-blue-500' },
+      { title: '활성 프로젝트', value: '23', change: '+3', trend: 'up', icon: Activity, color: 'text-purple-500' },
+      { title: '운영 비용', value: '8.2억', change: '-2.1%', trend: 'down', icon: TrendingDown, color: 'text-orange-500' }
+    ],
+    quarter: [
+      { title: '분기 매출', value: '72.3억', change: '+6.5%', trend: 'up', icon: DollarSign, color: 'text-emerald-500' },
+      { title: '목표 달성률', value: '96%', change: '+4.8%', trend: 'up', icon: Target, color: 'text-blue-500' },
+      { title: '활성 프로젝트', value: '45', change: '+12', trend: 'up', icon: Activity, color: 'text-purple-500' },
+      { title: '운영 비용', value: '24.5억', change: '+0.8%', trend: 'down', icon: TrendingDown, color: 'text-orange-500' }
+    ],
+    year: [
+      { title: '연간 매출', value: '325억', change: '+9.1%', trend: 'up', icon: DollarSign, color: 'text-emerald-500' },
+      { title: '목표 달성률', value: '98%', change: '+2.3%', trend: 'up', icon: Target, color: 'text-blue-500' },
+      { title: '활성 프로젝트', value: '156', change: '+34', trend: 'up', icon: Activity, color: 'text-purple-500' },
+      { title: '운영 비용', value: '98.2억', change: '-1.2%', trend: 'down', icon: TrendingDown, color: 'text-orange-500' }
+    ]
+  };
+
+  // 필터링된 데이터 계산
+  const filteredRevenueData = useMemo(() => allRevenueData[timeFilter], [timeFilter]);
+  const filteredDepartmentData = useMemo(() => allDepartmentData[departmentFilter], [departmentFilter]);
+  const filteredKpiData = useMemo(() => allKpiData[timeFilter], [timeFilter]);
 
   // 프로젝트 분포 데이터
   const projectDistribution = [
@@ -138,20 +192,22 @@ export default function Dashboard() {
     { name: '보류', value: 4, color: '#ef4444' },
   ];
 
-  const chartConfig = {
-    revenue: {
-      label: '매출',
-      color: '#10b981',
-    },
-    target: {
-      label: '목표',
-      color: '#94a3b8',
-    },
-    performance: {
-      label: '성과',
-      color: '#3b82f6',
-    },
-  };
+  // 필터 옵션
+  const timeFilterOptions = [
+    { value: 'week' as const, label: '주간', icon: Calendar },
+    { value: 'month' as const, label: '월간', icon: Calendar },
+    { value: 'quarter' as const, label: '분기', icon: Calendar },
+    { value: 'year' as const, label: '연간', icon: Calendar },
+  ];
+
+  const departmentFilterOptions = [
+    { value: 'all' as const, label: '전체 보기' },
+    { value: 'sales' as const, label: '영업' },
+    { value: 'marketing' as const, label: '마케팅' },
+    { value: 'dev' as const, label: '개발' },
+    { value: 'operations' as const, label: '운영' },
+    { value: 'hr' as const, label: '인사' },
+  ];
 
   const handleSend = () => {
     if (message.trim()) {
@@ -249,10 +305,67 @@ export default function Dashboard() {
               </Button>
             )}
             <h1 className="text-xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">대시보드</h1>
+
+            {/* Filter Buttons */}
+            <div className="hidden lg:flex items-center gap-2 ml-4">
+              {/* Time Filter */}
+              <div className="flex items-center gap-1 bg-[#F5F5F7] dark:bg-[#1C1C1E] rounded-lg p-1">
+                {timeFilterOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setTimeFilter(option.value)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      timeFilter === option.value
+                        ? 'bg-white dark:bg-[#2C2C2E] text-[#0071E3] shadow-sm'
+                        : 'text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Department Filter */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    showFilters
+                      ? 'bg-[#0071E3] text-white'
+                      : 'bg-[#F5F5F7] dark:bg-[#1C1C1E] text-[#6E6E73] dark:text-[#98989D] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
+                  }`}
+                >
+                  <Filter className="h-4 w-4" />
+                  {departmentFilterOptions.find(opt => opt.value === departmentFilter)?.label}
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showFilters && (
+                  <div className="absolute top-full left-0 mt-2 bg-white dark:bg-[#1C1C1E] rounded-lg shadow-lg border border-[#D2D2D7] dark:border-[#3A3A3C] py-1 min-w-[120px] z-50">
+                    {departmentFilterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setDepartmentFilter(option.value);
+                          setShowFilters(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                          departmentFilter === option.value
+                            ? 'bg-[#0071E3] text-white'
+                            : 'text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Button 
+            <Button
               onClick={() => navigate('/reports/1')}
               className="btn-apple-secondary"
             >
@@ -261,12 +374,31 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {/* Mobile Filters */}
+        <div className="lg:hidden px-6 py-3 border-b border-[#D2D2D7] dark:border-[#3A3A3C] bg-white dark:bg-black">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {timeFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setTimeFilter(option.value)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                  timeFilter === option.value
+                    ? 'bg-[#0071E3] text-white'
+                    : 'bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#6E6E73] dark:text-[#98989D]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto scrollbar-apple">
           <div className="container-apple py-12">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {kpiData.map((kpi, index) => (
+              {filteredKpiData.map((kpi, index) => (
                 <div
                   key={index}
                   className="card-apple p-6 space-y-3 opacity-0 animate-fade-in-up"
@@ -290,9 +422,14 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Revenue Chart */}
               <div className="card-apple p-6">
-                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">월별 매출 추이</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">매출 추이</h3>
+                  <span className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                    {timeFilterOptions.find(opt => opt.value === timeFilter)?.label}
+                  </span>
+                </div>
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={revenueData}>
+                  <LineChart data={filteredRevenueData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                     <XAxis dataKey="month" className="text-[#6E6E73] dark:text-[#98989D]" />
                     <YAxis className="text-[#6E6E73] dark:text-[#98989D]" />
@@ -321,9 +458,14 @@ export default function Dashboard() {
 
               {/* Department Performance Chart */}
               <div className="card-apple p-6">
-                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">부서별 성과</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">성과 분석</h3>
+                  <span className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                    {departmentFilterOptions.find(opt => opt.value === departmentFilter)?.label}
+                  </span>
+                </div>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={departmentData}>
+                  <BarChart data={filteredDepartmentData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                     <XAxis dataKey="name" className="text-[#6E6E73] dark:text-[#98989D]" />
                     <YAxis className="text-[#6E6E73] dark:text-[#98989D]" />
