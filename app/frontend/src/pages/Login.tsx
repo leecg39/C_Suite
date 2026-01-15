@@ -2,25 +2,50 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, Mail, Lock, Apple } from 'lucide-react';
+import { AlertCircle } from '@/components/ui/alert';
+import { ArrowRight, Mail, Lock, Apple, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    navigate('/dashboard');
+
+    try {
+      await signIn(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      setError('비밀번호 재설정을 위해 이메일을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const { resetPassword } = await import('@/contexts/AuthContext');
+      const auth = useAuth();
+      await auth.resetPassword(email);
+      alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
+    } catch (err: any) {
+      setError(err.message || '비밀번호 재설정에 실패했습니다.');
+    }
   };
 
   return (
@@ -29,7 +54,7 @@ export default function Login() {
       <nav className="border-b border-[#D2D2D7] dark:border-[#3A3A3C]">
         <div className="container-apple">
           <div className="flex items-center justify-between h-16">
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0071E3] transition-colors duration-200"
             >
@@ -37,10 +62,6 @@ export default function Login() {
             </button>
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              <span className="text-sm text-[#6E6E73] dark:text-[#98989D]">계정이 없으신가요?</span>
-              <Button className="btn-apple-secondary">
-                회원가입
-              </Button>
             </div>
           </div>
         </div>
@@ -58,6 +79,14 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-base font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -73,6 +102,7 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-apple pl-12"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -91,31 +121,36 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-apple pl-12"
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   className="w-4 h-4 rounded border-[#D2D2D7] dark:border-[#3A3A3C] text-[#0071E3] focus:ring-[#0071E3]"
                 />
                 <span className="text-[#1D1D1F] dark:text-[#F5F5F7]">로그인 상태 유지</span>
               </label>
-              <a href="#" className="link-apple text-sm">
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="link-apple text-sm"
+              >
                 비밀번호 찾기
-              </a>
+              </button>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="btn-apple-primary w-full text-lg py-4 min-h-[52px] relative"
               disabled={isLoading}
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
-                  <div className="spinner w-5 h-5"></div>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   로그인 중...
                 </div>
               ) : (
@@ -136,14 +171,14 @@ export default function Login() {
           </div>
 
           <div className="space-y-3">
-            <Button 
+            <Button
               type="button"
               className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-[#1D1D1F] dark:hover:bg-[#F5F5F7] rounded-full py-3 min-h-[48px] transition-all duration-300"
             >
               <Apple className="mr-2 h-5 w-5" />
               Apple로 계속하기
             </Button>
-            <Button 
+            <Button
               type="button"
               className="w-full bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-[#F5F5F7] border-2 border-[#D2D2D7] dark:border-[#3A3A3C] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] rounded-full py-3 min-h-[48px] transition-all duration-300"
             >

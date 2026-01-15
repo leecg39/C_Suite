@@ -22,7 +22,9 @@ import {
   Calendar,
   AlertCircle,
   Loader2,
-  Bot
+  Bot,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -32,15 +34,17 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { useAgents, useConversations, useCreateConversation, useCreateMessage } from '@/services/queries';
 import type { Agent } from '@/services/api';
 import { aiService } from '@/services/ai';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [message, setMessage] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState('');
   const [selectedAgentType, setSelectedAgentType] = useState<string>('CFO');
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Filter states
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
@@ -49,15 +53,19 @@ export default function Dashboard() {
 
   // API queries - 실제 데이터 로드
   const { data: agents = [], isLoading: agentsLoading, error: agentsError } = useAgents();
-  const { data: conversations = [], isLoading: conversationsLoading } = useConversations(currentUserId || '');
+  const { data: conversations = [], isLoading: conversationsLoading } = useConversations(user?.id || '');
   const createConversation = useCreateConversation();
   const createMessage = useCreateMessage();
 
-  // Mock user ID for development (실제로는 인증 후 가져와야 함)
-  useEffect(() => {
-    const mockUserId = localStorage.getItem('user_id') || '00000000-0000-0000-0000-000000000001';
-    setCurrentUserId(mockUserId);
-  }, []);
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // Agent 매핑
   const agentConfigMap: Record<string, { role: string; icon: any; color: string }> = {
@@ -238,7 +246,7 @@ export default function Dashboard() {
   ];
 
   const handleSend = async () => {
-    if (!message.trim() || !currentUserId) return;
+    if (!message.trim() || !user?.id) return;
 
     // Check if AI service is configured
     if (!aiService.isConfigured()) {
@@ -254,7 +262,7 @@ export default function Dashboard() {
     try {
       // 1. Create conversation
       const conversation = await createConversation.mutateAsync({
-        userId: currentUserId,
+        userId: user.id,
         title: userMessage.slice(0, 50) + (userMessage.length > 50 ? '...' : ''),
       });
 
@@ -452,6 +460,39 @@ export default function Dashboard() {
             >
               보고서 보기
             </Button>
+
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 p-2 hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] rounded-lg transition-colors"
+              >
+                <User className="h-5 w-5 text-[#6E6E73] dark:text-[#98989D]" />
+                <span className="hidden sm:inline text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  {user?.email?.split('@')[0]}
+                </span>
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-[#1C1C1E] rounded-lg shadow-lg border border-[#D2D2D7] dark:border-[#3A3A3C] py-1 min-w-[160px] z-50">
+                  <div className="px-3 py-2 border-b border-[#D2D2D7] dark:border-[#3A3A3C]">
+                    <p className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {user?.user_metadata?.full_name || '사용자'}
+                    </p>
+                    <p className="text-xs text-[#6E6E73] dark:text-[#98989D] truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-3 py-2 text-left text-sm text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    로그아웃
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
