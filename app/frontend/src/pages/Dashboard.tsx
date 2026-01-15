@@ -21,7 +21,8 @@ import {
   ChevronDown,
   Calendar,
   AlertCircle,
-  Loader2
+  Loader2,
+  Bot
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -30,6 +31,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { useAgents, useConversations, useCreateConversation, useCreateMessage } from '@/services/queries';
 import type { Agent } from '@/services/api';
+import { aiService } from '@/services/ai';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -37,6 +39,8 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState('');
+  const [selectedAgentType, setSelectedAgentType] = useState<string>('CFO');
 
   // Filter states
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
@@ -234,47 +238,71 @@ export default function Dashboard() {
   ];
 
   const handleSend = async () => {
-    if (message.trim() && currentUserId) {
-      setIsTyping(true);
-      const userMessage = message;
-      setMessage('');
+    if (!message.trim() || !currentUserId) return;
 
-      try {
-        // 1. 새 대화 생성 (실제로는 기존 대화에 메시지 추가 로직이 필요할 수 있음)
-        const conversation = await createConversation.mutateAsync({
-          userId: currentUserId,
-          title: userMessage.slice(0, 50) + (userMessage.length > 50 ? '...' : ''),
-        });
+    // Check if AI service is configured
+    if (!aiService.isConfigured()) {
+      alert('AI API가 설정되지 않았습니다. .env 파일에 VITE_OPENAI_API_KEY를 설정해주세요.');
+      return;
+    }
 
-        // 2. 사용자 메시지 저장
-        await createMessage.mutateAsync({
-          conversation_id: conversation.id,
-          agent_id: null,
-          role: 'user',
-          content: userMessage,
-          metadata: null,
-          confidence_score: null,
-        });
+    setIsTyping(true);
+    setAiResponse('');
+    const userMessage = message;
+    setMessage('');
 
-        // 3. AI 응답 시뮬레이션 (실제로는 AI API 호출)
-        setTimeout(async () => {
-          // AI 응답 메시지 저장
-          await createMessage.mutateAsync({
-            conversation_id: conversation.id,
-            agent_id: agents[0]?.id || null,
-            role: 'assistant',
-            content: '이것은 AI의 샘플 응답입니다. 실제 API 연결 후 동적으로 생성될 예정입니다.',
-            metadata: { model: 'gpt-4', tokens: 150 },
-            confidence_score: 0.95,
-          });
+    try {
+      // 1. Create conversation
+      const conversation = await createConversation.mutateAsync({
+        userId: currentUserId,
+        title: userMessage.slice(0, 50) + (userMessage.length > 50 ? '...' : ''),
+      });
 
-          setIsTyping(false);
-        }, 2000);
-      } catch (error) {
-        console.error('Failed to send message:', error);
-        setIsTyping(false);
-        setMessage(userMessage); // 실패 시 메시지 복원
-      }
+      // 2. Save user message
+      await createMessage.mutateAsync({
+        conversation_id: conversation.id,
+        agent_id: null,
+        role: 'user',
+        content: userMessage,
+        metadata: null,
+        confidence_score: null,
+      });
+
+      // 3. Get AI response with streaming
+      const agent = agents.find(a => a.agent_type === selectedAgentType) || agents[0];
+
+      const aiResponse = await aiService.chat(
+        [{ role: 'user', content: userMessage }],
+        agent?.agent_type || 'CFO',
+        (chunk) => {
+          // Streaming callback - update UI in real-time
+          setAiResponse(prev => prev + chunk);
+        }
+      );
+
+      // 4. Save AI response
+      await createMessage.mutateAsync({
+        conversation_id: conversation.id,
+        agent_id: agent?.id || null,
+        role: 'assistant',
+        content: aiResponse.content,
+        metadata: {
+          model: aiResponse.model,
+          tokens: aiResponse.usage?.total_tokens,
+        },
+        confidence_score: 0.95,
+      });
+
+      setAiResponse('');
+      setIsTyping(false);
+    } catch (error: any) {
+      console.error('Failed to send message:', error);
+      setIsTyping(false);
+      setMessage(userMessage); // Restore message on error
+
+      // Show error to user
+      const errorMessage = error?.message || 'AI 응답을 가져오는데 실패했습니다.';
+      alert(`오류: ${errorMessage}`);
     }
   };
 
@@ -596,25 +624,36 @@ export default function Dashboard() {
                     color: 'from-gray-400 to-gray-600'
                   };
                   const IconComponent = config.icon;
+                  const isSelected = selectedAgentType === agent.agent_type;
 
                   return (
                     <button
                       key={agent.id}
-                      className="card-apple p-6 text-center space-y-3 hover:scale-105 opacity-0 animate-scale-in"
+                      className={`card-apple p-6 text-center space-y-3 hover:scale-105 opacity-0 animate-scale-in transition-all ${
+                        isSelected ? 'ring-2 ring-[#0071E3] ring-offset-2' : ''
+                      }`}
                       style={{ animationDelay: `${(index + 1) * 100}ms` }}
                       onClick={() => {
+                        setSelectedAgentType(agent.agent_type);
                         // 에이전트 선택 시 해당 에이전트와 대화 시작
                         setMessage(`${config.role} ${agent.agent_type}와 대화를 시작합니다.`);
                       }}
                     >
                       <div className="mx-auto transform transition-transform duration-300 hover:scale-110">
-                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg ${
+                          isSelected ? 'ring-2 ring-white ring-offset-2' : ''
+                        }`}>
                           <IconComponent className="h-8 w-8 text-white" />
                         </div>
                       </div>
                       <div>
                         <p className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{agent.agent_type}</p>
                         <p className="text-xs text-[#6E6E73] dark:text-[#98989D] mt-1">{config.role}</p>
+                        {isSelected && (
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-[#0071E3] text-white rounded-full">
+                            선택됨
+                          </span>
+                        )}
                       </div>
                     </button>
                   );
@@ -642,13 +681,34 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Typing Indicator */}
+              {/* Typing Indicator / Streaming Response */}
               {isTyping && (
-                <div className="flex items-center gap-2 justify-center opacity-0 animate-fade-in">
-                  <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow"></div>
-                  <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow" style={{ animationDelay: '0.4s' }}></div>
-                  <span className="text-sm text-[#6E6E73] dark:text-[#98989D] ml-2">AI가 답변을 작성하고 있습니다...</span>
+                <div className="card-apple p-6 max-w-2xl mx-auto opacity-0 animate-fade-in">
+                  <div className="flex items-start gap-4">
+                    <Bot className="h-8 w-8 text-[#0071E3] flex-shrink-0 mt-1" />
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                          {selectedAgentType}
+                        </span>
+                        {aiResponse && (
+                          <span className="text-xs text-[#6E6E73] dark:text-[#98989D]">응답 생성 중...</span>
+                        )}
+                      </div>
+                      {aiResponse ? (
+                        <div className="text-sm text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-pre-wrap">
+                          {aiResponse}
+                          <span className="inline-block w-2 h-4 bg-[#0071E3] ml-1 animate-pulse" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow"></div>
+                          <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-[#0071E3] rounded-full animate-pulse-slow" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
