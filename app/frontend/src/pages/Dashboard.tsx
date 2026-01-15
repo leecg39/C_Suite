@@ -24,17 +24,19 @@ import {
   Loader2,
   Bot,
   LogOut,
-  User
+  User,
+  Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AgentAvatar } from '@/components/AgentAvatar';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
-import { useAgents, useConversations, useCreateConversation, useCreateMessage } from '@/services/queries';
+import { useAgents, useConversations, useCreateConversation, useCreateMessage, useCreateReport } from '@/services/queries';
 import type { Agent } from '@/services/api';
 import { aiService } from '@/services/ai';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateReport } from '@/services/reportGeneration';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -46,6 +48,13 @@ export default function Dashboard() {
   const [selectedAgentType, setSelectedAgentType] = useState<string>('CFO');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Report generation state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTopic, setReportTopic] = useState('');
+  const [selectedAgents, setSelectedAgents] = useState<string[]>(['CFO', 'CTO', 'CMO', 'COO', 'CHRO']);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [generatedReportId, setGeneratedReportId] = useState<string | null>(null);
+
   // Filter states
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [departmentFilter, setDepartmentFilter] = useState<'all' | 'sales' | 'marketing' | 'dev' | 'operations' | 'hr'>('all');
@@ -56,6 +65,7 @@ export default function Dashboard() {
   const { data: conversations = [], isLoading: conversationsLoading } = useConversations(user?.id || '');
   const createConversation = useCreateConversation();
   const createMessage = useCreateMessage();
+  const createReport = useCreateReport();
 
   // Logout handler
   const handleLogout = async () => {
@@ -65,6 +75,73 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  // Report generation handler
+  const handleGenerateReport = async () => {
+    if (!reportTopic.trim() || selectedAgents.length === 0 || !user?.id) {
+      alert('보고서 주제와 최소 1개 이상의 에이전트를 선택해주세요.');
+      return;
+    }
+
+    if (!aiService.isConfigured()) {
+      alert('AI API가 설정되지 않았습니다. .env 파일에 VITE_OPENAI_API_KEY를 설정해주세요.');
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    setShowReportModal(false);
+
+    try {
+      // Generate the report
+      const report = await generateReport({
+        topic: reportTopic,
+        agents: selectedAgents,
+        includeCharts: true,
+        detailLevel: 'detailed',
+      });
+
+      // Save to database (mock for now - would be real API call)
+      const savedReport = await createReport.mutateAsync({
+        userId: user.id,
+        reportData: {
+          title: report.title,
+          report_type: 'comprehensive',
+          status: 'final',
+          metadata: {
+            topic: reportTopic,
+            agents: selectedAgents,
+            kpi: report.kpi,
+            executive_summary: report.executive_summary,
+            sections: report.sections,
+            next_steps: report.next_steps,
+          } as any,
+        },
+        conversationId: null,
+      });
+
+      setGeneratedReportId(savedReport.id);
+      setIsGeneratingReport(false);
+
+      // Navigate to the report page
+      setTimeout(() => {
+        navigate(`/reports/${savedReport.id}`);
+      }, 500);
+    } catch (error: any) {
+      console.error('Report generation error:', error);
+      setIsGeneratingReport(false);
+      setShowReportModal(true);
+      alert(`보고서 생성 실패: ${error.message}`);
+    }
+  };
+
+  // Toggle agent selection for report
+  const toggleAgentSelection = (agentType: string) => {
+    setSelectedAgents(prev =>
+      prev.includes(agentType)
+        ? prev.filter(a => a !== agentType)
+        : [...prev, agentType]
+    );
   };
 
   // Agent 매핑
@@ -332,10 +409,19 @@ export default function Dashboard() {
               <X className="h-5 w-5 text-[#6E6E73] dark:text-[#98989D]" />
             </Button>
           </div>
-          <Button className="btn-apple-primary w-full">
-            <Plus className="mr-2 h-5 w-5" />
-            새 대화
-          </Button>
+          <div className="space-y-2">
+            <Button className="btn-apple-primary w-full">
+              <Plus className="mr-2 h-5 w-5" />
+              새 대화
+            </Button>
+            <Button
+              onClick={() => setShowReportModal(true)}
+              className="btn-apple-secondary w-full"
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              AI 보고서 생성
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-apple p-4">
@@ -783,6 +869,152 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Report Generation Loading Overlay */}
+      {isGeneratingReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="card-apple p-8 max-w-md w-full text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0071E3] to-[#0055B3] flex items-center justify-center mx-auto">
+              <Sparkles className="h-8 w-8 text-white animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+              AI 보고서 생성 중
+            </h3>
+            <p className="text-[#6E6E73] dark:text-[#98989D]">
+              {selectedAgents.join(', ')} 에이전트들이 분석을 진행하고 있습니다...
+            </p>
+            <div className="space-y-2">
+              <div className="h-2 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-full overflow-hidden">
+                <div className="h-full bg-[#0071E3] animate-progress w-full origin-left"></div>
+              </div>
+              <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                약 1-2분 소요됩니다
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Generation Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="card-apple w-full max-w-2xl max-h-[90vh] overflow-y-auto opacity-0 animate-scale-in">
+            <div className="p-6 border-b border-[#D2D2D7] dark:border-[#3A3A3C]">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  AI 보고서 생성
+                </h2>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-[#6E6E73] dark:text-[#98989D]" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Topic Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  보고서 주제
+                </label>
+                <Input
+                  value={reportTopic}
+                  onChange={(e) => setReportTopic(e.target.value)}
+                  placeholder="예: 신제품 출시 전략, 2024년 예산 검토, 조직 개편 방안"
+                  className="input-apple"
+                />
+                <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                  분석받고 싶은 주제를 입력해주세요
+                </p>
+              </div>
+
+              {/* Agent Selection */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  참여 에이전트 선택
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {agents.map((agent) => {
+                    const config = agentConfigMap[agent.agent_type];
+                    if (!config) return null;
+                    const IconComponent = config.icon;
+                    const isSelected = selectedAgents.includes(agent.agent_type);
+
+                    return (
+                      <button
+                        key={agent.id}
+                        onClick={() => toggleAgentSelection(agent.agent_type)}
+                        className={`p-3 rounded-lg border-2 transition-all text-left ${
+                          isSelected
+                            ? 'border-[#0071E3] bg-[#0071E3] bg-opacity-10'
+                            : 'border-[#D2D2D7] dark:border-[#3A3A3C] hover:border-[#0071E3]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center`}>
+                            <IconComponent className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">
+                              {agent.agent_type}
+                            </p>
+                            <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                              {config.role}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[#6E6E73] dark:text-[#98989D]">
+                  {selectedAgents.length === 0
+                    ? '최소 1개 이상의 에이전트를 선택해주세요'
+                    : `${selectedAgents.length}개 에이전트가 선택됨`}
+                </p>
+              </div>
+
+              {/* Info */}
+              <div className="bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg p-4">
+                <p className="text-sm text-[#6E6E73] dark:text-[#98989D]">
+                  📊 AI가 선택한 에이전트들의 관점에서 종합적인 분석 보고서를 생성합니다.
+                  <br />
+                  ⏱️ 보고서 생성에는 약 1-2분 소요됩니다.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-6 border-t border-[#D2D2D7] dark:border-[#3A3A3C] flex gap-3">
+              <Button
+                onClick={() => setShowReportModal(false)}
+                className="btn-apple-secondary flex-1"
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleGenerateReport}
+                disabled={!reportTopic.trim() || selectedAgents.length === 0 || isGeneratingReport}
+                className="btn-apple-primary flex-1"
+              >
+                {isGeneratingReport ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    생성 중...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    보고서 생성
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
