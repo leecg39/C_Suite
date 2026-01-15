@@ -1,22 +1,28 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Send, 
-  Menu, 
-  X, 
-  TrendingUp, 
-  Code, 
-  Megaphone, 
-  Settings, 
+import {
+  Send,
+  Menu,
+  X,
+  TrendingUp,
+  Code,
+  Megaphone,
+  Settings,
   Users,
   Plus,
   MessageSquare,
-  FileText
+  FileText,
+  DollarSign,
+  Target,
+  Activity,
+  TrendingDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AgentAvatar } from '@/components/AgentAvatar';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -68,6 +74,84 @@ export default function Dashboard() {
     { id: 3, title: '조직 문화 개선 방안', time: '3일 전', agents: ['CHRO', 'COO'], hasReport: false },
     { id: 4, title: '디지털 전환 로드맵', time: '1주일 전', agents: ['CTO', 'COO'], hasReport: false }
   ];
+
+  // 주요 KPI 메트릭
+  const kpiData = [
+    {
+      title: '월 매출',
+      value: '24.5억',
+      change: '+12.5%',
+      trend: 'up',
+      icon: DollarSign,
+      color: 'text-emerald-500'
+    },
+    {
+      title: '목표 달성률',
+      value: '87%',
+      change: '+5.2%',
+      trend: 'up',
+      icon: Target,
+      color: 'text-blue-500'
+    },
+    {
+      title: '활성 프로젝트',
+      value: '23',
+      change: '+3',
+      trend: 'up',
+      icon: Activity,
+      color: 'text-purple-500'
+    },
+    {
+      title: '운영 비용',
+      value: '8.2억',
+      change: '-2.1%',
+      trend: 'down',
+      icon: TrendingDown,
+      color: 'text-orange-500'
+    }
+  ];
+
+  // 월별 매출 데이터
+  const revenueData = [
+    { month: '1월', revenue: 18.2, target: 20 },
+    { month: '2월', revenue: 19.5, target: 20 },
+    { month: '3월', revenue: 21.8, target: 22 },
+    { month: '4월', revenue: 20.3, target: 22 },
+    { month: '5월', revenue: 23.1, target: 24 },
+    { month: '6월', revenue: 24.5, target: 25 },
+  ];
+
+  // 부서별 성과 데이터
+  const departmentData = [
+    { name: '영업', performance: 92, target: 100 },
+    { name: '마케팅', performance: 85, target: 100 },
+    { name: '개발', performance: 88, target: 100 },
+    { name: '운영', performance: 78, target: 100 },
+    { name: '인사', performance: 82, target: 100 },
+  ];
+
+  // 프로젝트 분포 데이터
+  const projectDistribution = [
+    { name: '진행중', value: 15, color: '#3b82f6' },
+    { name: '기획중', value: 8, color: '#f59e0b' },
+    { name: '완료', value: 32, color: '#10b981' },
+    { name: '보류', value: 4, color: '#ef4444' },
+  ];
+
+  const chartConfig = {
+    revenue: {
+      label: '매출',
+      color: '#10b981',
+    },
+    target: {
+      label: '목표',
+      color: '#94a3b8',
+    },
+    performance: {
+      label: '성과',
+      color: '#3b82f6',
+    },
+  };
 
   const handleSend = () => {
     if (message.trim()) {
@@ -180,6 +264,123 @@ export default function Dashboard() {
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto scrollbar-apple">
           <div className="container-apple py-12">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {kpiData.map((kpi, index) => (
+                <div
+                  key={index}
+                  className="card-apple p-6 space-y-3 opacity-0 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+                    <span className={`text-xs font-medium ${kpi.trend === 'up' ? 'text-emerald-500' : 'text-orange-500'}`}>
+                      {kpi.change}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{kpi.value}</p>
+                    <p className="text-sm text-[#6E6E73] dark:text-[#98989D]">{kpi.title}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Revenue Chart */}
+              <div className="card-apple p-6">
+                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">월별 매출 추이</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                    <XAxis dataKey="month" className="text-[#6E6E73] dark:text-[#98989D]" />
+                    <YAxis className="text-[#6E6E73] dark:text-[#98989D]" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      name="실제 매출"
+                      dot={{ fill: '#10b981' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="target"
+                      stroke="#94a3b8"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="목표"
+                      dot={{ fill: '#94a3b8' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Department Performance Chart */}
+              <div className="card-apple p-6">
+                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">부서별 성과</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={departmentData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                    <XAxis dataKey="name" className="text-[#6E6E73] dark:text-[#98989D]" />
+                    <YAxis className="text-[#6E6E73] dark:text-[#98989D]" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="performance" fill="#3b82f6" name="성과 점수" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Project Distribution Chart */}
+              <div className="card-apple p-6">
+                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">프로젝트 분포</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={projectDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {projectDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="card-apple p-6">
+                <h3 className="text-lg font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">요약 통계</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg">
+                    <span className="text-sm text-[#6E6E73] dark:text-[#98989D]">총 프로젝트</span>
+                    <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">59개</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg">
+                    <span className="text-sm text-[#6E6E73] dark:text-[#98989D]">완료율</span>
+                    <span className="font-semibold text-emerald-500">54%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg">
+                    <span className="text-sm text-[#6E6E73] dark:text-[#98989D]">평균 성과</span>
+                    <span className="font-semibold text-blue-500">85%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-lg">
+                    <span className="text-sm text-[#6E6E73] dark:text-[#98989D]">전월 대비</span>
+                    <span className="font-semibold text-emerald-500">+12.5%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Welcome State */}
             <div className="text-center space-y-8 max-w-3xl mx-auto">
               <div className="space-y-4 opacity-0 animate-fade-in-up">
