@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,11 +33,14 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { AgentAvatar } from '@/components/AgentAvatar';
 import { useReport } from '@/services/queries';
 import type { Report as ReportType } from '@/services/api';
+import { generateMultiPagePDF } from '@/services/pdfExport';
 
 export default function Report() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const reportContentRef = useRef<HTMLDivElement>(null);
   const { data: report, isLoading, error } = useReport(id || '');
 
   const handleShare = () => {
@@ -46,8 +49,28 @@ export default function Report() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    window.print();
+  const handleDownload = async () => {
+    if (!reportContentRef.current) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const metadata = report.metadata as any;
+      const topic = metadata?.topic || 'report';
+      const filename = `${topic.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_보고서.pdf`;
+
+      await generateMultiPagePDF(reportContentRef.current, {
+        filename,
+        quality: 0.95,
+        scale: 2,
+        format: 'a4',
+        orientation: 'portrait',
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('PDF 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   // Loading state
@@ -145,10 +168,20 @@ export default function Report() {
               </Button>
               <Button
                 onClick={handleDownload}
+                disabled={isGeneratingPDF}
                 className="btn-apple-primary flex items-center gap-2"
               >
-                <Download className="h-4 w-4" />
-                PDF 다운로드
+                {isGeneratingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    PDF 생성 중...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    PDF 다운로드
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -157,7 +190,7 @@ export default function Report() {
 
       {/* Report Content */}
       <div className="section-apple">
-        <div className="container-apple space-y-16">
+        <div ref={reportContentRef} className="container-apple space-y-16">
           {/* Header */}
           <div className="text-center space-y-4 opacity-0 animate-fade-in-up">
             <h1 className="text-6xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
